@@ -10,12 +10,14 @@ import sendConfirmationEmail from "../middlewares/mailer.js";
 import crypto from 'crypto';
 import moment from 'moment';
 import schedule from 'node-schedule';
-
+import dotenv from 'dotenv';
 
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+dotenv.config();
+
 
 export async function getAll(req, res) {
     try {
@@ -72,8 +74,6 @@ export async function register(req, res) {
             username,
             email,
             password: hashedPassword,
-            role: "user",
-            otpCode: "$2b$10$mhjRG0mlSuN3KaFu5UcndumyAfO0AAwDR",
             score: 0,
             coins: 0,
            
@@ -85,121 +85,46 @@ export async function register(req, res) {
         .catch(err => {
             res.status(500).json({ error: err });
         });
-    await sendRegistrationMail(email);
-}
-export async function sendMail(req, res) {
-    try {
-        let transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: "mohamedamine.koubaa@esprit.tn",
-                pass: "Emna2007890**"
-            },
-        });
-        let info = transporter.sendMail({
-            from: "mohamedamine.koubaa@esprit.tn",
-            to: "medaminekoubaa4@gmail.com",
-            subject: "Message",
-            text: "I hope this message gets through!",
-        });
-        res.json(info);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-
-
-}
-
-export async function sendRegistrationMail(email) {
-    let transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-            user: "mohamedamine.koubaa@esprit.tn",
-            pass: "Emna2007890**"
-        },
-    });
-    transporter.sendMail({
-        from: "mohamedamine.koubaa@esprit.tn",
-        to: email,
-        subject: "welcome",
-        text: "welcome to our Game DESERT Endless Runner",
-    });
+   
 }
 
 
 //login
 
+// Login
 export async function login(req, res) {
-    const { error } = loginValidate(req.body);
+    try {
+        const { error } = loginValidate(req.body);
 
-    if (error) {
-        return res.status(400).send(error.details[0].message);
-    }
-
-    let user = await User.findOne({ email: req.body.email });
-    if (!user) {
-        return res.status(404).send('Invalid email or password');
-    }
-
-    const checkPassword = await bcrypt.compare(req.body.password, user.password);
-    if (!checkPassword) {
-        return res.status(404).send('Invalid email or password');
-    }
-
-    // Générer un code unique et sécurisé composé de 8 caractères
-    const confirmCode = crypto.randomBytes(4).toString('hex').toUpperCase();
-
-    // Crypter le code avec bcrypt
-    // const salt = await bcrypt.genSalt(10);
-    // const hashedCode = await bcrypt.hash(confirmCode, salt);
-
-    // Définir l'heure d'expiration du code
-    const expiration = moment().add(5, 'minutes');
-
-    //user.code = hashedCode;
-    user.code = confirmCode;
-    user.codeExpiration = expiration;
-    await user.save();
-
-    // Envoyer l'e-mail avec le code
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-            user: 'mohamedamine.koubaa@esprit.tn',
-            pass: 'nafti92769118'
-        }
-    });
-
-    const mailOptions = {
-        from: 'mohamedamine.koubaa@esprit.tn',
-        to: user.email,
-        subject: 'Code to link your account to our game Haven',
-        text: `Your code is ${confirmCode}. This code will expire at ${expiration.format('MMMM Do YYYY, h:mm:ss a')}.`,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-            console.log(error);
-        } else {
-            console.log('E-mail envoyé : ' + info.response);
+            return res.status(400).send(error.details[0].message);
         }
-    });
 
-    // Planifier la suppression de l'attribut "code" de l'objet "user" après cinq minutes
-    schedule.scheduleJob(expiration.toDate(), async function() {
-        user.code = null;
-        user.codeExpiration = null;
-        await user.save();
-    });
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
 
-    
+        if (!user) {
+            return res.status(404).send('Invalid email or password');
+        }
+
+        const checkPassword = await bcrypt.compare(password, user.password);
+
+        if (!checkPassword) {
+            return res.status(404).send('Invalid email or password');
+        }
+
+        // Generate a JSON Web Token (JWT) for user authentication
+        const token = jwt.sign({ _id: user._id, email: user.email }, process.env.JWT_SECRET, {
+            expiresIn: '1h', // You can adjust the token expiration time as needed
+        });
+
+        res.status(200).json({ token });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
+    }
 }
+
 
 //Recherche d’un seul document
 export async function getOnce(req, res) {
@@ -247,182 +172,25 @@ export async function deleteOnce(req, res) {
 
 
 
-export  async function forgetPassword (req, res, next) {
-
-    const { email } = req.body;
-
-    const renderedUser = await User.findOne({ email });
-
-    if (!renderedUser) {
-
-        throw new Error("user not found");
-    }
-    // sendRegistrationMail(email)
-    sendMail()
-    res.status(200).json({ code: renderedUser.otpCode });
-
-    /**
-     *
-     * let transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: "mohamedamine.koubaa@esprit.tn",
-                pass: ""
-            },
-        });
-
-     transporter.sendMail({
-            from: "mohamedamine.koubaa@esprit.tn",
-            to: email,
-            subject: "forget password",
-            text: `here your reset password code ${renderedUser.otpCode}`,
-        });
-     *
-     *
-     *  */
 
 
 
-};
-
-export const changePassword = async (req, res, next) => {
-    try {
-        const { code, newPassword, email } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) {
-            throw new Error("wrong email");
-        }
-        const isValidCode = await bcrypt.compare(code.toString(), user.otpCode);
-        if (!isValidCode) {
-            throw new Error("wrong code");
-        }
-
-        const newCode = Math.floor(1000 + Math.random() * 9000);
-        const encryptedCode = await bcrypt.hash(newCode.toString(), 10);
-
-        const updatedUser = await User.findOneAndUpdate(
-            { _id: user._id || user.id },
-            {
-                $set: {
-                    password: await bcrypt.hash(newPassword, 10),
-                    otpCode: encryptedCode,
-                },
-            },
-            { returnOriginal: false }
-        );
-        res.status(200).json({ user: updatedUser });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: err.message });
-    }
-};
 
 
-export const changePasswordInProfile = async (req, res, next) => {
-    try {
-        const {id} = req.params;
-        const { password, newPassword } = req.body;
-        const renderedUser = await User.findOne({ _id: id });
-        if (!renderedUser) {
-            throw new Error("wrong email");
-        }
-        const checkIfPasswordIsOkay = await bcrypt.compare(password, renderedUser.password);
-        if (!checkIfPasswordIsOkay) {
-            throw new Error("wrong password");
-        }
 
-        const updatedUser = await User.findOneAndUpdate({ _id: renderedUser._id || renderedUser.id }, {
-                $set: {
-                    password: await bcrypt.hash(newPassword, 10),
-                }
-            }
-            , { returnOriginal: false });
-        res.status(200).json({ user: updatedUser });
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: err.message });
-    }
-}
-
-
-//  reset Password email
-
-// export async function resetPass(req, res) {
-//     try {
-//       const user = await User.findOne({ email: req.body.email });
-
-//       if (!user) {
-//         return res.status(404).send({ message: "User not found" });
-//       }
-
-//       const newCode = Math.floor(1000 + Math.random() * 9000);
-//       const encryptedCode = await bcrypt.hash(newCode.toString(), 10);
-
-//       user.otpCode = encryptedCode;
-
-//       await user.save();
-//       await sendConfirmationEmail(req.body.email, newCode);
-
-//       res.status(200).send({ newCode });
-//     } catch (err) {
-//       console.log("Error: ", err);
-//       res.status(500).send({ message: err.message });
-//     }
-//   }
-//
-export async function resetPass(req, res) {
-    try {
-        const { email } = req.body;
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).send({ message: "User Not found." });
-        }
-
-        const newCode = Math.floor(1000 + Math.random() * 9000);
-        const encryptedCode = await bcrypt.hash(newCode.toString(), 10);
-
-        user.otpCode = encryptedCode;
-        sendConfirmationEmail(req.body.email, newCode);
-
-        await user.save();
-        res.status(200).send({ newCode });
-    } catch (err) {
-        console.log("error", err);
-        res.status(500).send({ message: err.message });
-    }
-}
-export async function searchPublicKeyByCode(req, res) {
-    const { code } = req.body;
-
-    try {
-        const user = await User.findOne({ code: code });
-
-        if (!user) {
-            return res.status(404).json({ message: 'Verification code not found' });
-        }
-
-        // Return the public key if the verification code is found
-        res.status(200).json({ publicKey: user.publickey });
-    } catch (err) {
-        res.status(500).json({ message: 'An error occurred while searching for the public key' });
-    }
-}
 export async function updateUserbyuserId(req, res) {
-    const { publickey } = req.params;
-    const { username, email, password, score,code, questsDone,position,rotation} = req.body;
+    const { UserId } = req.params;
+    const { username, email, password, score,coins} = req.body;
   
     try {
       const user = await User.findOneAndUpdate(
-        { publickey: publickey }, // Find the user by UserId
-        {$set:{score,questsDone,code,username,position,rotation }}, // Update the user's information
+        { UserId: UserId }, // Find the user by UserId
+        {$set:{username, email, password, score,coins}}, // Update the user's information
         { new: true } // Return the updated user
       );
   
       if (!user) {
-        throw new Error(`User with public key  ${publickey} not found`);
+        throw new Error(`User with public key  ${UserId} not found`);
       }
   
       return res.status(200).json(user);
@@ -434,55 +202,21 @@ export async function updateUserbyuserId(req, res) {
   
   export async function getUserbyUserId(req, res) {
     try {
-        const {publickey} = req.params;
-        const user = await User.findOne({publickey}).populate('username').populate('publickey').populate('score').populate('position').populate('rotation');
+        const {UserId} = req.params;
+        const user = await User.findOne({UserId}).populate('username').populate('email').populate('score').populate('coins');
     
         if (!user) {
-          return res.status(404).json({message: `User with id ${publickey} not found`});
+          return res.status(404).json({message: `User with id ${UserId} not found`});
         }
     
         res.status(200).json(user);
       } catch (error) {
         res.status(500).json({message: error.message});
       }
-    // try {
-    //   // Retrieve the userId from the request parameters or body
-    //   const userId = req.params.userId || req.body.userId;
-  
-    //   // Query the user from the database
-    //   const user = await User.findOne({ UserId: userId });
-  
-    //   if (!user) {
-    //     return res.status(404).json({ error: 'User not found' });
-    //   }
-  
-    //   // Return the user data
-    //   res.json(user);
-    // } catch (error) {
-    //   console.error('Error retrieving user:', error);
-    //   res.status(500).json({ error: 'Server error' });
-    // }
+    
   }
  
  
-
-
-//   export async function updateUserScorebyUserId(publickey, score) {
-//     try {
-//       const user = await User.findOne({ publickey: publickey });
-//       if (!user) {
-//         throw new Error("User not found");
-//       }
-//       user.score = score;
-//       await user.save();
-//       return user;
-//     } catch (error) {
-//       console.error("Error updating user score:", error);
-//       throw error;
-//     }
-//   }
-  
-  // Export additional controller functions as needed
   
   
   

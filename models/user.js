@@ -26,46 +26,15 @@ const userSchema=new Schema(
             type:String,
             required:true
         },
-        role:{
-            type:String
-        },
-        otpCode: {
-            type: String,
-            required: true
-        },
-        code: {
-            type: String,
-            default: '',
-        },
-        codeExpiration: {
-            type: Date,
-            default: null,
-        },
-
-        publickey: {
-            type:String,
-            required:true //cet attribut est obligatoire
-        },
-        questsDone: {
-            type: Number,
-            default: 0
-          },
+       
         score: {
             type: Number,
             default: 0,
-        }, 
-        position: {
-            x: Number,
-            y: Number,
-            z: Number,
         },
-        rotation: {
-            x: Number,
-            y: Number,
-            z: Number,
-            w: Number,
-        }
-            
+        coins: {
+            type: Number,
+            default: 0,
+        },
         
         
         
@@ -79,10 +48,10 @@ const userSchema=new Schema(
 export function userValidate(user){
     const schema = Joi.object({
         UserId: Joi.string().min(4).max(30).required(),
-        username: Joi.string().min(4).max(10).required(),
+        username: Joi.string().min(4).max(30).required(),
         email: Joi.string().email().required(),
         password: Joi.string().min(5).required(),
-        publickey: Joi.string().min(43).max(43).required()
+        
     });
 
     return schema.validate(user);

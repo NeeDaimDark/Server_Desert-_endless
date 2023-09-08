@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { register, deleteOnce, getAll, getOnce, patchOnce, login, profile, sendMail, sendRegistrationMail, forgetPassword, changePassword, changePasswordInProfile, resetPass, getAllusr,getUserbyUserId,updateUserbyuserId} from '../controllers/user.js';
+import { register, deleteOnce, getAll, getOnce, patchOnce, login, getAllusr,getUserbyUserId,updateUserbyuserId} from '../controllers/user.js';
 //import sendRegistrationMail from '../controllers/user.js'
 import { checkToken } from '../middlewares/auth.js';
 
@@ -32,17 +32,7 @@ router
 /*router
 .post("/forgetPassword", forgetPassword);
 */
-router
-    .route('/reset' ).post(resetPass);
 
-
-router.post("/changePassword", changePassword);
-
-router.post("/changePasswordProfile/:id", changePasswordInProfile);
-
-router
-    .route('/mail')
-    .post(sendMail);
 
 
 router
@@ -65,10 +55,7 @@ router.route('/usrs').get(getAllusr);
  .route('/register')
  .post(sendRegistrationMail);
  */
-router
-    .route('/:id')
-    .patch(checkToken, patchOnce)
-    .delete( deleteOnce);
+
 //router.get("/profile", checkToken, profile)
 router.post("/login", login);
 
