@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { register, deleteOnce, getAll, getOnce, patchOnce, login, getAllusr,getUserbyUserId,updateUserbyuserId} from '../controllers/user.js';
+import { register, deleteOnce, getAll, getOnce, patchOnce, login, getAllusr,getUserbyUserId,updateUserbyuserId,getPlayerDataByEmail,getUserbyUsermail} from '../controllers/user.js';
 //import sendRegistrationMail from '../controllers/user.js'
 import { checkToken } from '../middlewares/auth.js';
 
@@ -69,6 +69,7 @@ router.route('/getUserbyUserId/:UserId').get(getUserbyUserId);
 
 // Update user
 router.route('/updateUserbyuserId/:UserId').put(updateUserbyuserId);
+router.route('/geInventorybymail/:email').get(getUserbyUsermail);
 
 
 

@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { render } from 'ejs';
 import sendConfirmationEmail from "../middlewares/mailer.js";
-import crypto from 'crypto';
+
 import moment from 'moment';
 import schedule from 'node-schedule';
 import dotenv from 'dotenv';
@@ -215,6 +215,47 @@ export async function updateUserbyuserId(req, res) {
       }
     
   }
+  // Add a new function to retrieve coins and score by email
+
+
+  export async function getPlayerDataByEmail(req, res) {
+      try {
+          const email = req.params.email;
+          // Fetch the user data based on the email
+          const user = await User.findOne({ email }, 'coins username score');
+  
+          if (!user) {
+              return res.status(404).json({ message: `Player with email ${email} not found` });
+          }
+  
+          // Return the desired data (coins, username, and score)
+          const { coins, username, score } = user;
+          res.status(200).json({ coins, username, score });
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: "Server error" });
+      }
+  }
+  export async function getUserbyUsermail(req, res) {
+    try {
+        let email = req.params.email.trim(); // Trim the email parameter
+        console.log('Email:', email); // Add this line for debugging
+
+        const user = await User.findOne({ email }).populate('username').populate('coins').populate('score');
+
+        if (!user) {
+            return res.status(404).json({ message: `User with id ${email} not found` });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+
+  
+
  
  
   
